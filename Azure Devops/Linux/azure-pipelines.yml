@@ -1,0 +1,35 @@
+trigger: 
+  - master
+
+pr:
+  paths:
+    exclude:
+    - README.md
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+- name: ImageName
+  value: ado-linux-agent
+- name: AdoAgentVersion
+  value: "2.202.0"
+
+
+steps:
+
+- task: CmdLine@2
+  displayName: 'Build Dockerfile image'
+  inputs:
+    script: |
+      docker build -t $(ContainerRegistryUrl)/$(ImageName):$(AdoAgentVersion) \
+      --build-arg ADO_PAT=$(ADO-PAT) \
+      --build-arg ADO_VERSION=$(AdoAgentVersion) \
+      .
+
+- task: CmdLine@2
+  displayName: 'Push image to container registry'
+  inputs:
+    script: |
+      docker login $(ContainerRegistryUrl) --username $(CONTAINERREPOUSERNAME) --password $(CONTAINERREPOPASSWORD)
+      docker push $(ContainerRegistryUrl)/$(ImageName):$(AdoAgentVersion)
