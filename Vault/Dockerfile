@@ -1,9 +1,10 @@
-FROM vault:1.9.4
+# https://hub.docker.com/_/vault
+FROM vault:latest
 
 COPY config.hcl /vault/config.hcl
 
-COPY vault.crt /vault/vault.crt
-COPY vault.key /vault/vault.key
-COPY vault.ca.crt /vault/vault.ca.crt
+COPY vault.teokyllc.internal.crt /vault/vault.crt
+COPY vault.teokyllc.internal.key /vault/vault.key
+COPY TEOKYLLC_Root_CA.crt /vault/vault.ca.crt
 
 ENTRYPOINT vault server -config=/vault/config.hcl
