@@ -20,8 +20,6 @@ on:
       - '.github/workflows/runners.yaml'
       - '!**.md'
 
-runs-on: [self-hosted, linux, x64]
-
 env:
   RUNNER_VERSION: 2.298.2
   DOCKER_VERSION: 20.10.12
@@ -31,7 +29,7 @@ env:
 jobs:
   build-runners:
     name: Build ${{ matrix.name }}-${{ matrix.os-name }}-${{ matrix.os-version }}
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64]
     permissions:
       packages: write
       contents: read
