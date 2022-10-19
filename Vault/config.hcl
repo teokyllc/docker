@@ -1,11 +1,11 @@
 ui            = true
-api_addr      = "https://127.0.0.1:8200"
-cluster_addr  = "https://127.0.0.1:8201"
+api_addr      = "https://vault.teokyllc.internal:8200"
+cluster_addr  = "https://vault.teokyllc.internal:8201"
 disable_mlock = true
 
 storage "azure" {
   accountName = "ataylorvaultbackend"
-  accountKey  = ""
+  accountKey  = "bn2SXyYwBo5clsJ76nXKCf5IOArL8w0MMACXVFOUG9DCOh5ov2jn2kNEB63FxU5MRq7puygLu/gz+AStZ6qN4A=="
   container   = "vault"
   environment = "AzurePublicCloud"
 }

@@ -24,3 +24,5 @@ docker exec -it vault-0 vault operator init -tls-skip-verify
 ```
 docker run -d vault:latest 
 ```
+
+kubectl create secret docker-registry acr --docker-server=ataylorregistry.azurecr.io --docker-username=ataylorregistry --docker-password=85ojOoyJPvOumwci9X92n9+2Mwo02/2=
