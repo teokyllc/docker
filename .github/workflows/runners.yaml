@@ -1,0 +1,65 @@
+name: Runners
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+    branches:
+      - 'main'
+    paths:
+      - 'Actions-Runner/**'
+      - '.github/workflows/runners.yaml'
+      - '!**.md'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'Actions-Runner/**'
+      - '.github/workflows/runners.yaml'
+      - '!**.md'
+
+env:
+  RUNNER_VERSION: 2.298.2
+  DOCKER_VERSION: 20.10.12
+  RUNNER_CONTAINER_HOOKS_VERSION: 0.1.2
+  DOCKERHUB_USERNAME: summerwind
+
+jobs:
+  build-runners:
+    name: Build ${{ matrix.name }}-${{ matrix.os-name }}-${{ matrix.os-version }}
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: actions-runner-dind
+            os-name: ubuntu
+            os-version: 20.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Build and Push Versioned Tags
+        uses: docker/build-push-action@v3
+        with:
+          context: ./runner
+          file: ./runner/${{ matrix.name }}.dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+          build-args: |
+            RUNNER_VERSION=${{ env.RUNNER_VERSION }}
+            DOCKER_VERSION=${{ env.DOCKER_VERSION }}
+            RUNNER_CONTAINER_HOOKS_VERSION=${{ env.RUNNER_CONTAINER_HOOKS_VERSION }}
+          tags: |
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.vars.outputs.sha_short }}
+            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository }}/${{ matrix.name }}:latest
+            ghcr.io/${{ github.repository }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}
+            ghcr.io/${{ github.repository }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.vars.outputs.sha_short }}
