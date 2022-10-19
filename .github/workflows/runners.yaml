@@ -20,6 +20,8 @@ on:
       - '.github/workflows/runners.yaml'
       - '!**.md'
 
+runs-on: [self-hosted, linux, x64]
+
 env:
   RUNNER_VERSION: 2.298.2
   DOCKER_VERSION: 20.10.12
