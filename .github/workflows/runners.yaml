@@ -57,6 +57,7 @@ jobs:
         uses: docker/setup-buildx-action@v2
         with:
           install: true
+          driver: kubernetes
 
       # - name: Build and Push Versioned Tags
       #   uses: docker/build-push-action@v3
