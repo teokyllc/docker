@@ -54,10 +54,13 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
+      - run: docker context create buildx-build
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
           install: true
+          buildkitd-flags: --use buildx-build
 
       - name: Build and Push Versioned Tags
         uses: docker/build-push-action@v3
