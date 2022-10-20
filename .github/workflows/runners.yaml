@@ -29,7 +29,7 @@ env:
 jobs:
   build-runners:
     name: Build ${{ matrix.name }}-${{ matrix.os-name }}-${{ matrix.os-version }}
-    runs-on: [self-hosted, linux, x64]
+    runs-on: [ubuntu-latest]
     permissions:
       packages: write
       contents: read
