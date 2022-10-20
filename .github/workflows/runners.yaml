@@ -24,7 +24,8 @@ env:
   RUNNER_VERSION: 2.298.2
   DOCKER_VERSION: 20.10.12
   RUNNER_CONTAINER_HOOKS_VERSION: 0.1.2
-  DOCKERHUB_USERNAME: ataylorregistry.azurecr.io
+  CONTAINER_REGISTRY: ataylorregistry.azurecr.io
+  CONTAINER_REGISTRY_USERNAME: ataylorregistry
 
 jobs:
   build-runners:
@@ -48,6 +49,14 @@ jobs:
           echo ::set-output name=sha_short::${GITHUB_SHA::7}
         shell: bash
 
+      - name: Login to Container Registry
+        if: ${{ github.event_name == 'release' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ env.CONTAINER_REGISTRY_USERNAME }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -66,9 +75,5 @@ jobs:
             DOCKER_VERSION=${{ env.DOCKER_VERSION }}
             RUNNER_CONTAINER_HOOKS_VERSION=${{ env.RUNNER_CONTAINER_HOOKS_VERSION }}
           tags: |
-            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}
-            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.vars.outputs.sha_short }}
-            ${{ env.DOCKERHUB_USERNAME }}/${{ matrix.name }}:latest
-            ghcr.io/${{ github.repository }}/${{ matrix.name }}:latest
-            ghcr.io/${{ github.repository }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}
-            ghcr.io/${{ github.repository }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.vars.outputs.sha_short }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.vars.outputs.sha_short }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest
