@@ -1,11 +1,13 @@
 #!/bin/bash
 source logger.bash
 
-cd $RUNNER_ASSETS_DIR
-mkdir _work
+RUNNER_ASSETS_DIR=${RUNNER_ASSETS_DIR:-/runnertmp}
+RUNNER_HOME=${RUNNER_HOME:-/runner}
 
-# These environment variables are used by GitHub's Runner as described here
+# Let GitHub runner execute these hooks. These environment variables are used by GitHub's Runner as described here
 # https://github.com/actions/runner/blob/main/docs/adrs/1751-runner-job-hooks.md
+# Scripts referenced in the ACTIONS_RUNNER_HOOK_ environment variables must end in .sh or .ps1
+# for it to become a valid hook script, otherwise GitHub will fail to run the hook
 export ACTIONS_RUNNER_HOOK_JOB_STARTED=/etc/arc/hooks/job-started.sh
 export ACTIONS_RUNNER_HOOK_JOB_COMPLETED=/etc/arc/hooks/job-completed.sh
 
@@ -26,7 +28,8 @@ else
 fi
 
 if [ -z "${RUNNER_NAME}" ]; then
-  RUNNER_NAME=$(hostname)
+  log.error 'RUNNER_NAME must be set'
+  exit 1
 fi
 
 if [ -n "${RUNNER_ORG}" ] && [ -n "${RUNNER_REPO}" ] && [ -n "${RUNNER_ENTERPRISE}" ]; then
@@ -51,6 +54,30 @@ if [ -z "${RUNNER_REPO}" ] && [ -n "${RUNNER_GROUP}" ];then
   RUNNER_GROUPS=${RUNNER_GROUP}
 fi
 
+# Hack due to https://github.com/actions-runner-controller/actions-runner-controller/issues/252#issuecomment-758338483
+if [ ! -d "${RUNNER_HOME}" ]; then
+  log.error "$RUNNER_HOME should be an emptyDir mount. Please fix the pod spec."
+  exit 1
+fi
+
+# if this is not a testing environment
+if [[ "${UNITTEST:-}" == '' ]]; then
+  sudo chown -R runner:docker "$RUNNER_HOME"
+  # enable dotglob so we can copy a ".env" file to load in env vars as part of the service startup if one is provided
+  # loading a .env from the root of the service is part of the actions/runner logic
+  shopt -s dotglob
+  # use cp instead of mv to avoid issues when src and dst are on different devices
+  cp -r "$RUNNER_ASSETS_DIR"/* "$RUNNER_HOME"/
+  shopt -u dotglob
+fi
+
+if ! cd "${RUNNER_HOME}"; then
+  log.error "Failed to cd into ${RUNNER_HOME}"
+  exit 1
+fi
+
+# past that point, it's all relative pathes from /runner
+
 config_args=()
 if [ "${RUNNER_FEATURE_FLAG_ONCE:-}" != "true" ] && [ "${RUNNER_EPHEMERAL}" == "true" ]; then
   config_args+=(--ephemeral)
@@ -70,7 +97,9 @@ while [[ ${retries_left} -gt 0 ]]; do
     --name "${RUNNER_NAME}" \
     --url "${GITHUB_URL}${ATTACH}" \
     --token "${RUNNER_TOKEN}" \
-    --work "_work" "${config_args[@]}"
+    --runnergroup "${RUNNER_GROUPS}" \
+    --labels "${RUNNER_LABELS}" \
+    --work "${RUNNER_WORKDIR}" "${config_args[@]}"
 
   if [ -f .runner ]; then
     log.debug 'Runner successfully configured.'
