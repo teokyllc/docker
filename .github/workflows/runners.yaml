@@ -37,15 +37,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - name: actions-runner
-            os-name: ubuntu
-            os-version: 20.04
           - name: actions-runner-dind
             os-name: ubuntu
             os-version: 20.04
-          - name: actions-runner-dind-rootless
-            os-name: ubuntu
-            os-version: 20.04
+          # - name: actions-runner-dind-rootless
+          #   os-name: ubuntu
+          #   os-version: 20.04
 
     steps:
       - name: Checkout
@@ -62,11 +59,9 @@ jobs:
       - name: Setup buildx context
         run: |
           docker context create tls-env
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-        with:
-          version: latest
+          wget https://github.com/docker/buildx/releases/download/v0.9.1/buildx-v0.9.1.linux-amd64
+          mv buildx-v0.9.1.linux-amd64 /usr/local/lib/docker/cli-plugins/docker-buildx
+          docker buildx create tls-env
 
       - name: Login to DockerHub
         if: ${{ github.event_name == 'release' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
