@@ -78,11 +78,11 @@ RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
 	rm docker.tgz; \
 	dockerd --version; \
 	docker --version
-RUN mkdir /home/runner/.docker \
-    && mkdir /home/runner/.docker/cli-plugins \
-    && curl https://github.com/docker/buildx/releases/download/v0.9.1/buildx-v0.9.1.linux-amd64 --output /home/runner/.docker/cli-plugins/docker-buildx \
-    && chown -R runner:docker /home/runner/.docker \
-    && chmod +x /home/runner/.docker/cli-plugins/docker-buildx
+# RUN mkdir /home/runner/.docker \
+#     && mkdir /home/runner/.docker/cli-plugins \
+#     && curl https://github.com/docker/buildx/releases/download/v0.9.1/buildx-v0.9.1.linux-amd64 --output /home/runner/.docker/cli-plugins/docker-buildx \
+#     && chown -R runner:docker /home/runner/.docker \
+#     && chmod +x /home/runner/.docker/cli-plugins/docker-buildx
 
 
 
