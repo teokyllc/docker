@@ -62,7 +62,6 @@ jobs:
       - name: Setup buildx context
         run: |
           docker context create tls-env
-          docker buildx create tls-env
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
