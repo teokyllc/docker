@@ -1,6 +1,15 @@
 #!/bin/bash
 source logger.bash
 
+mkdir /home/runner/.docker
+mkdir /home/runner/.docker/cli-plugins
+wget https://github.com/docker/buildx/releases/download/v0.9.1/buildx-v0.9.1.linux-amd64
+mv buildx-v0.9.1.linux-amd64 --output /home/runner/.docker/cli-plugins/docker-buildx
+chmod +x /home/runner/.docker/cli-plugins/docker-buildx
+docker buildx install
+
+
+
 RUNNER_ASSETS_DIR=${RUNNER_ASSETS_DIR:-/runnertmp}
 RUNNER_HOME=${RUNNER_HOME:-/runner}
 
