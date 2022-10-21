@@ -10,6 +10,7 @@ on:
       - 'main'
     paths:
       - 'Actions-Runner/**'
+      - '!Actions-Runner/Makefile'
       - '.github/workflows/runners.yaml'
       - '!**.md'
   push:
@@ -17,6 +18,7 @@ on:
       - 'main'
     paths:
       - 'Actions-Runner/**'
+      - '!Actions-Runner/Makefile'
       - '.github/workflows/runners.yaml'
       - '!**.md'
 
@@ -25,17 +27,23 @@ env:
   DOCKER_VERSION: 20.10.12
   RUNNER_CONTAINER_HOOKS_VERSION: 0.1.2
   CONTAINER_REGISTRY: ataylorregistry.azurecr.io
-  CONTAINER_REGISTRY_USERNAME: ataylorregistry
+  CR_USERNAME: ataylorregistry
 
 jobs:
   build-runners:
     name: Build ${{ matrix.name }}-${{ matrix.os-name }}-${{ matrix.os-version }}
-    runs-on: [ubuntu-latest]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
+          - name: actions-runner
+            os-name: ubuntu
+            os-version: 20.04
           - name: actions-runner-dind
+            os-name: ubuntu
+            os-version: 20.04
+          - name: actions-runner-dind-rootless
             os-name: ubuntu
             os-version: 20.04
 
@@ -44,24 +52,25 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Get Short SHA
-        id: vars
-        run: |
-          echo ::set-output name=sha_short::${GITHUB_SHA::7}
+        id: sha
+        run: echo ::set-output name=sha_short::${GITHUB_SHA::8}
         shell: bash
-
-      - name: Login to Container Registry
-        if: ${{ github.event_name == 'release' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.CONTAINER_REGISTRY }}
-          username: ${{ env.CONTAINER_REGISTRY_USERNAME }}
-          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+        with:
+          version: latest
+
+      - name: Login to DockerHub
+        if: ${{ github.event_name == 'release' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.CONTAINER_REGISTRY }}
+          username: ${{ env.CR_USERNAME }}
+          password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
       - name: Build and Push Versioned Tags
         uses: docker/build-push-action@v3
@@ -69,11 +78,11 @@ jobs:
           context: ./Actions-Runner
           file: ./Actions-Runner/${{ matrix.name }}.dockerfile
           platforms: linux/amd64
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
           build-args: |
             RUNNER_VERSION=${{ env.RUNNER_VERSION }}
             DOCKER_VERSION=${{ env.DOCKER_VERSION }}
             RUNNER_CONTAINER_HOOKS_VERSION=${{ env.RUNNER_CONTAINER_HOOKS_VERSION }}
           tags: |
-            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.vars.outputs.sha_short }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }}
             ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest

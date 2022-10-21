@@ -1,15 +1,12 @@
 FROM ubuntu:20.04
 
+ARG TARGETPLATFORM
 ARG RUNNER_VERSION=2.298.2
+ARG DOCKER_CHANNEL=stable
 ARG DOCKER_VERSION=20.10.18
 ARG DUMB_INIT_VERSION=1.2.5
 
-ARG RUNNER_NAME
-ARG RUNNER_ORG=teokyllc
-ARG RUNNER_TOKEN
-ENV RUNNER_NAME=$RUNNER_NAME
-ENV RUNNER_ORG=$RUNNER_ORG
-ENV RUNNER_TOKEN=$RUNNER_TOKEN
+RUN test -n "$TARGETPLATFORM" || (echo "TARGETPLATFORM must be set" && false)
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -y \
@@ -59,22 +56,36 @@ RUN adduser --disabled-password --gecos "" --uid 1000 runner \
     && usermod -aG docker runner \
     && echo "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers
 
-# Docker download
-RUN if ! curl -f -L -o docker.tgz "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz"; then \
-		echo >&2 "error: failed to download 'docker-${DOCKER_VERSION}'"; \
+# arch command on OS X reports "i386" for Intel CPUs regardless of bitness
+# Docker download supports arm64 as aarch64 & amd64 / i386 as x86_64
+RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
+    && if [ "$ARCH" = "arm64" ]; then export ARCH=aarch64 ; fi \
+    && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "i386" ]; then export ARCH=x86_64 ; fi \
+	&& if ! curl -f -L -o docker.tgz "https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${ARCH}/docker-${DOCKER_VERSION}.tgz"; then \
+		echo >&2 "error: failed to download 'docker-${DOCKER_VERSION}' from '${DOCKER_CHANNEL}' for '${ARCH}'"; \
 		exit 1; \
 	fi; \
-    echo "Downloaded Docker from https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz"; \
-	tar --extract --file docker.tgz --strip-components 1 --directory /usr/bin/ ; \
+    echo "Downloaded Docker from https://download.docker.com/linux/static/${DOCKER_CHANNEL}/${ARCH}/docker-${DOCKER_VERSION}.tgz"; \
+	tar --extract \
+		--file docker.tgz \
+		--strip-components 1 \
+		--directory /usr/bin/ \
+	; \
 	rm docker.tgz; \
 	dockerd --version; \
 	docker --version
 
-# Runner download
-ENV RUNNER_ASSETS_DIR=/runner
-RUN mkdir -p "$RUNNER_ASSETS_DIR" \
+# Runner download supports amd64 as x64
+#
+# libyaml-dev is required for ruby/setup-ruby action.
+# It is installed after installdependencies.sh and before removing /var/lib/apt/lists
+# to avoid rerunning apt-update on its own.
+ENV RUNNER_ASSETS_DIR=/runnertmp
+RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
+    && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i386" ]; then export ARCH=x64 ; fi \
+    && mkdir -p "$RUNNER_ASSETS_DIR" \
     && cd "$RUNNER_ASSETS_DIR" \
-    && curl -f -L -o runner.tar.gz https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz \
+    && curl -f -L -o runner.tar.gz https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-${ARCH}-${RUNNER_VERSION}.tar.gz \
     && tar xzf ./runner.tar.gz \
     && rm runner.tar.gz \
     && ./bin/installdependencies.sh \
@@ -82,27 +93,33 @@ RUN mkdir -p "$RUNNER_ASSETS_DIR" \
     && rm -rf /var/lib/apt/lists/*
 
 ENV RUNNER_TOOL_CACHE=/opt/hostedtoolcache
-RUN mkdir $RUNNER_TOOL_CACHE \
-    && chgrp docker $RUNNER_TOOL_CACHE \
-    && chmod g+rwx $RUNNER_TOOL_CACHE
+RUN mkdir /opt/hostedtoolcache \
+    && chgrp docker /opt/hostedtoolcache \
+    && chmod g+rwx /opt/hostedtoolcache
 
-# We place the scripts in `/usr/bin` so that users who extend this image can override them with scripts of the same name placed in `/usr/local/bin`.
+# We place the scripts in `/usr/bin` so that users who extend this image can
+# override them with scripts of the same name placed in `/usr/local/bin`.
 COPY entrypoint.sh logger.bash startup.sh update-status /usr/bin/
 COPY supervisor/ /etc/supervisor/conf.d/
 RUN chmod +x /usr/bin/startup.sh /usr/bin/entrypoint.sh
+
+# Copy the docker shim which propagates the docker MTU to underlying networks
+# to replace the docker binary in the PATH.
 COPY docker-shim.sh /usr/local/bin/docker
 
 # Configure hooks folder structure.
 COPY hooks /etc/arc/hooks/
 
-# Dumb-init
-RUN curl -f -L -o /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_x86_64 \
+# arch command on OS X reports "i386" for Intel CPUs regardless of bitness
+RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
+    && if [ "$ARCH" = "arm64" ]; then export ARCH=aarch64 ; fi \
+    && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "i386" ]; then export ARCH=x86_64 ; fi \
+    && curl -f -L -o /usr/local/bin/dumb-init https://github.com/Yelp/dumb-init/releases/download/v${DUMB_INIT_VERSION}/dumb-init_${DUMB_INIT_VERSION}_${ARCH} \
     && chmod +x /usr/local/bin/dumb-init
 
 VOLUME /var/lib/docker
 
 ENV HOME=/home/runner
-
 # Add the Python "User Script Directory" to the PATH
 ENV PATH="${PATH}:${HOME}/.local/bin"
 ENV ImageOS=ubuntu20
