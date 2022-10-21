@@ -59,6 +59,11 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
+      - name: Setup buildx context
+        command: |
+          docker context create tls-env
+          docker buildx create tls-env --use
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
         with:
