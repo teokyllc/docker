@@ -3,8 +3,8 @@ source logger.bash
 
 mkdir /home/runner/.docker
 mkdir /home/runner/.docker/cli-plugins
-curl https://github.com/docker/buildx/releases/download/v0.9.1/buildx-v0.9.1.linux-amd64 --output /home/runner/.docker/cli-plugins/docker-buildx
-ls -lah /home/runner/.docker/
+wget https://github.com/docker/buildx/releases/download/v0.9.1/buildx-v0.9.1.linux-amd64 -P /home/runner/.docker/cli-plugins
+mv /home/runner/.docker/cli-plugins/buildx-v0.9.1.linux-amd64  /home/runner/.docker/cli-plugins/docker-buildx
 chmod +x /home/runner/.docker/cli-plugins/docker-buildx
 docker buildx install
 
