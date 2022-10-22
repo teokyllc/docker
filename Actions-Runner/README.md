@@ -3,10 +3,10 @@ This folder contains files required to build the Github Actions Runner Docker im
 * actions-runner-dind.dockerfile
 * actions-runner-dind-rootless.dockerfile
 
-<br><br>
-[Actions Runner Controller (ARC)](https://github.com/actions-runner-controller/actions-runner-controller)
-[detailed-docs](https://github.com/actions-runner-controller/actions-runner-controller/blob/master/docs/detailed-docs.md)
-[Helm Values](https://github.com/actions-runner-controller/actions-runner-controller/tree/master/charts/actions-runner-controller)
+<br>
+[Actions Runner Controller (ARC)](https://github.com/actions-runner-controller/actions-runner-controller)<br>
+[detailed-docs](https://github.com/actions-runner-controller/actions-runner-controller/blob/master/docs/detailed-docs.md)<br>
+[Helm Values](https://github.com/actions-runner-controller/actions-runner-controller/tree/master/charts/actions-runner-controller)<br>
 
 
 ## Deploying with Helm
@@ -14,7 +14,7 @@ Add the actions-runner-controller helm repo.<br>
 ```
 helm repo add actions-runner-controller https://actions-runner-controller.github.io/actions-runner-controller
 ```
-<br><br>
+<br>
 
 Download and customize the values.yaml file.  Update the file to include the authentication to Github and the custom Runner image.<br>
 ```
@@ -35,14 +35,14 @@ image:
   pullPolicy: IfNotPresent
   actionsRunnerImagePullSecrets: [acr-access]
 ```
-<br><br>
+<br>
 
 
 Deploy the Helm chart.<br>
 ```
 helm upgrade --install --namespace actions-runner-system --create-namespace --values ~/values.yml --wait actions-runner-controller actions-runner-controller/actions-runner-controller
 ```
-<br><br>
+<br>
 
 Create the Runner Deployment.<br>
 ```
