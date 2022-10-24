@@ -25,12 +25,14 @@ RUN apt update -y \
     ftp \
     git \
     git-lfs \
+    gnupg \
     iproute2 \
     iputils-ping \
     iptables \
     jq \
     libunwind8 \
     locales \
+    lsb-release \
     netcat \
     net-tools \
     openssh-client \
@@ -76,7 +78,10 @@ RUN curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zi
     && rm -f awscliv2.zip
 
 # Azure CLI
-#RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+RUN curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /etc/apt/trusted.gpg.d/microsoft.gpg > /dev/null \
+    && echo "deb [arch=amd64] https://packages.microsoft.com/repos/azure-cli/ $(lsb_release -cs)" | tee /etc/apt/sources.list.d/azure-cli.list \
+    && apt-get update \
+    && apt-get install -y azure-cli
 
 # Docker
 RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
@@ -121,8 +126,8 @@ RUN curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packa
 RUN apt-get install -y default-jdk default-jre
 
 # NodeJS
-RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
-    && apt-get install -y nodejs
+# RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
+#     && apt-get install -y nodejs
 
 # Powershell
 RUN wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" \
