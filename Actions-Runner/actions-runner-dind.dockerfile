@@ -118,7 +118,7 @@ RUN curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packa
     && apt-get install -y kubectl
 
 # Java JDK
-RUN apt install default-jdk default-jre
+RUN apt-get install -y default-jdk default-jre
 
 # NodeJS
 RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
