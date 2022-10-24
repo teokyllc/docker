@@ -174,7 +174,5 @@ RUN echo "PATH=${PATH}" > /etc/environment \
 
 USER runner
 
-RUN rm -rf /var/lib/apt/lists/*
-
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 CMD ["startup.sh"]
