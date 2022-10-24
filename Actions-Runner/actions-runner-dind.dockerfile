@@ -141,7 +141,7 @@ RUN apt-get install -y python3 python3-pip \
     && pip install kubernetes
 
 # Yq
-RUN https://github.com/mikefarah/yq/releases/download/v4.28.2/yq_linux_amd64 \
+RUN wget https://github.com/mikefarah/yq/releases/download/v4.28.2/yq_linux_amd64 \
     && mv yq_linux_amd64 /usr/bin/yq \
     && chmod 777 /usr/bin/yq
 
