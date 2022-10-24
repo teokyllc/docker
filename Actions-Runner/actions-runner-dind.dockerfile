@@ -138,7 +138,7 @@ RUN apt-get install -y default-jdk default-jre
 RUN apt-get install -y python3 python3-pip \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && ln -sf /usr/bin/pip3 /usr/bin/pip \
-    pip install kubernetes
+    && pip install kubernetes
 
 # Yq
 RUN https://github.com/mikefarah/yq/releases/download/v4.28.2/yq_linux_amd64 \
