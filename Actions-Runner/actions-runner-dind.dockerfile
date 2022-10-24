@@ -129,10 +129,10 @@ RUN apt-get install -y default-jdk default-jre
 #     && apt-get install -y nodejs
 
 # Powershell
-RUN wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" \
-    && dpkg -i packages-microsoft-prod.deb \
-    && apt-get update \
-    && apt-get install -y powershell
+# RUN wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" \
+#     && dpkg -i packages-microsoft-prod.deb \
+#     && apt-get update \
+#     && apt-get install -y powershell
 
 # Python
 RUN apt-get install -y python3 python3-pip \
