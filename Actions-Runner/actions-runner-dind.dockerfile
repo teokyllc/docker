@@ -16,9 +16,11 @@ RUN apt update -y \
     && add-apt-repository -y ppa:git-core/ppa \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
+    apt-transport-https \
     build-essential \
     curl \
     ca-certificates \
+    dotnet6 \
     dnsutils \
     ftp \
     git \
@@ -33,7 +35,6 @@ RUN apt update -y \
     net-tools \
     openssh-client \
     parallel \
-    python3-pip \
     rsync \
     shellcheck \
     supervisor \
@@ -46,19 +47,38 @@ RUN apt update -y \
     upx \
     wget \
     zip \
-    zstd \
-    && ln -sf /usr/bin/python3 /usr/bin/python \
-    && ln -sf /usr/bin/pip3 /usr/bin/pip \
-    && rm -rf /var/lib/apt/lists/*
+    zstd
+    
 
-# Runner user
+# Actions Runner user
 RUN adduser --disabled-password --gecos "" --uid 1000 runner \
     && groupadd docker \
     && usermod -aG sudo runner \
     && usermod -aG docker runner \
     && echo "%sudo   ALL=(ALL:ALL) NOPASSWD:ALL" > /etc/sudoers
 
-# Download Docker
+# Actions Runner
+ENV RUNNER_ASSETS_DIR=/runnertmp
+RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
+    && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i386" ]; then export ARCH=x64 ; fi \
+    && mkdir -p "$RUNNER_ASSETS_DIR" \
+    && cd "$RUNNER_ASSETS_DIR" \
+    && curl -f -L -o runner.tar.gz https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-${ARCH}-${RUNNER_VERSION}.tar.gz \
+    && tar xzf ./runner.tar.gz \
+    && rm runner.tar.gz \
+    && ./bin/installdependencies.sh \
+    && apt-get install -y libyaml-dev
+
+# AWS CLI
+RUN curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zip \
+    && unzip awscliv2.zip \
+    && ./aws/install \
+    && rm -f awscliv2.zip
+
+# Azure CLI
+RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
+
+# Docker
 RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
     && if [ "$ARCH" = "arm64" ]; then export ARCH=aarch64 ; fi \
     && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "i386" ]; then export ARCH=x86_64 ; fi \
@@ -76,19 +96,50 @@ RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
 	dockerd --version; \
 	docker --version
 
+# Hashicorp
+RUN wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/share/keyrings/hashicorp-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list \
+    && apt update \
+    && apt-get install -y \
+    packer \
+    terraform \
+    vault
 
-# Download Runner
-ENV RUNNER_ASSETS_DIR=/runnertmp
-RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
-    && if [ "$ARCH" = "amd64" ] || [ "$ARCH" = "x86_64" ] || [ "$ARCH" = "i386" ]; then export ARCH=x64 ; fi \
-    && mkdir -p "$RUNNER_ASSETS_DIR" \
-    && cd "$RUNNER_ASSETS_DIR" \
-    && curl -f -L -o runner.tar.gz https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-${ARCH}-${RUNNER_VERSION}.tar.gz \
-    && tar xzf ./runner.tar.gz \
-    && rm runner.tar.gz \
-    && ./bin/installdependencies.sh \
-    && apt-get install -y libyaml-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Helm
+RUN curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | tee /usr/share/keyrings/helm.gpg > /dev/null \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/helm.gpg] https://baltocdn.com/helm/stable/debian/ all main" | tee /etc/apt/sources.list.d/helm-stable-debian.list \
+    && apt-get update \
+    && apt-get install helm
+
+# Kubectl
+RUN curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list \
+    && apt-get update \
+    && apt-get install -y kubectl
+
+# Java JDK
+RUN apt install default-jdk default-jre
+
+# NodeJS
+RUN curl -fsSL https://deb.nodesource.com/setup_19.x | bash - && \
+    && apt-get install -y nodejs
+
+# Powershell
+RUN wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb" \
+    && dpkg -i packages-microsoft-prod.deb \
+    && apt-get update \
+    && apt-get install -y powershell
+
+# Python
+RUN apt-get install -y python3 python3-pip \
+    && ln -sf /usr/bin/python3 /usr/bin/python \
+    && ln -sf /usr/bin/pip3 /usr/bin/pip \
+    pip install kubernetes
+
+# Yq
+RUN https://github.com/mikefarah/yq/releases/download/v4.28.2/yq_linux_amd64 \
+    && mv yq_linux_amd64 /usr/bin/yq \
+    && chmod 777 /usr/bin/yq
 
 ENV RUNNER_TOOL_CACHE=/opt/hostedtoolcache
 RUN mkdir /opt/hostedtoolcache \
@@ -118,6 +169,8 @@ RUN echo "PATH=${PATH}" > /etc/environment \
     && echo "ImageOS=${ImageOS}" >> /etc/environment
 
 USER runner
+
+RUN rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT ["/usr/local/bin/dumb-init", "--"]
 CMD ["startup.sh"]
