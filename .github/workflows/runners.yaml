@@ -95,7 +95,7 @@ jobs:
         run: |
             mkdir ~/.kube
             vault kv get -mount=kv -field=kubeconfig kubeconfig > ~/.kube/config
-            chmod 600 ~/.kube/config
+            chown $(id -u):$(id -g) ~/.kube/config
             helm repo add actions-runner-controller \
               https://actions-runner-controller.github.io/actions-runner-controller
             helm upgrade --install \
