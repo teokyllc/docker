@@ -72,23 +72,23 @@ jobs:
           username: ${{ env.CR_USERNAME }}
           password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
-      # - name: Build and Push Versioned Tags
-      #   uses: docker/build-push-action@v3
-      #   with:
-      #     context: ./Actions-Runner
-      #     file: ./Actions-Runner/${{ matrix.name }}.dockerfile
-      #     platforms: linux/amd64
-      #     push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      #     build-args: |
-      #       RUNNER_VERSION=${{ env.RUNNER_VERSION }}
-      #       DOCKER_VERSION=${{ env.DOCKER_VERSION }}
-      #       DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }}
-      #       BUILDX_VERSION=${{ env.BUILDX_VERSION }}
-      #       VAULT_ADDR=${{ env.VAULT_ADDR }}
-      #       VAULT_TOKEN=${{ env.VAULT_TOKEN }}
-      #     tags: |
-      #       ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }}
-      #       ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest
+      - name: Build and Push Versioned Tags
+        uses: docker/build-push-action@v3
+        with:
+          context: ./Actions-Runner
+          file: ./Actions-Runner/${{ matrix.name }}.dockerfile
+          platforms: linux/amd64
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          build-args: |
+            RUNNER_VERSION=${{ env.RUNNER_VERSION }}
+            DOCKER_VERSION=${{ env.DOCKER_VERSION }}
+            DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }}
+            BUILDX_VERSION=${{ env.BUILDX_VERSION }}
+            VAULT_ADDR=${{ env.VAULT_ADDR }}
+            VAULT_TOKEN=${{ env.VAULT_TOKEN }}
+          tags: |
+            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }}
+            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest
 
       - name: Release the new image
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -103,7 +103,7 @@ jobs:
               --create-namespace \
               --set authSecret.enabled=true \
               --set authSecret.github_token=$(vault kv get -mount=kv -field=pat github) \
-              --set image.actionsRunnerRepositoryAndTag=ataylorregistry.azurecr.io/actions-runner-dind:v2.298.2-ubuntu-20.04-a08f66cc \
+              --set image.actionsRunnerRepositoryAndTag=${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }} \
               --set image.actionsRunnerImagePullSecrets[0]=acr-access \
               --wait \
               actions-runner-controller \
