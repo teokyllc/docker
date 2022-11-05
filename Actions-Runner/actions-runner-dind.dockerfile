@@ -151,7 +151,8 @@ RUN mkdir /opt/hostedtoolcache \
     && chmod g+rwx /opt/hostedtoolcache
 
 # Trusted CA
-RUN vault kv get -mount=kv -field=AD-CA cert > /usr/local/share/ca-certificates/teokyllc-root-ca.crt \
+RUN export VAULT_SKIP_VERIFY=true \
+    && vault kv get -mount=kv -field=AD-CA cert > /usr/local/share/ca-certificates/teokyllc-root-ca.crt \
     && vault kv get -mount=kv -field=vault-int-ca cert > /usr/local/share/ca-certificates/teokyllc-vault-int-ca.crt \
     && update-ca-certificates
 
