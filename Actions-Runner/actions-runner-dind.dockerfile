@@ -150,6 +150,11 @@ RUN mkdir /opt/hostedtoolcache \
     && chgrp docker /opt/hostedtoolcache \
     && chmod g+rwx /opt/hostedtoolcache
 
+# Trusted CA
+RUN vault kv get -mount=kv -field=AD-CA cert > /usr/local/share/ca-certificates/teokyllc-root-ca.crt \
+    && vault kv get -mount=kv -field=vault-int-ca cert > /usr/local/share/ca-certificates/teokyllc-vault-int-ca.crt \
+    && update-ca-certificates
+
 COPY entrypoint.sh logger.bash startup.sh update-status /usr/bin/
 COPY supervisor/ /etc/supervisor/conf.d/
 RUN chmod +x /usr/bin/startup.sh /usr/bin/entrypoint.sh
