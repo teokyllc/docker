@@ -107,7 +107,8 @@ RUN wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor | tee /usr/s
     && apt-get install -y \
     packer \
     terraform \
-    vault
+    vault \
+    && setcap -r /usr/bin/vault
 
 # Helm
 RUN curl https://baltocdn.com/helm/signing.asc | gpg --dearmor | tee /usr/share/keyrings/helm.gpg > /dev/null \
