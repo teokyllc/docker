@@ -109,3 +109,4 @@ jobs:
               actions-runner-controller \
               actions-runner-controller/actions-runner-controller \
               > generated.yaml
+            kubectl apply --insecure-skip-tls-verify  -f generated.yaml
