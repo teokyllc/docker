@@ -34,6 +34,9 @@ jobs:
   build-runners:
     name: Build ${{ matrix.name }}-${{ matrix.os-name }}-${{ matrix.os-version }}
     runs-on: [self-hosted]
+    env:
+      VAULT_ADDR: "https://vault.teokyllc.internal:8200"
+      VAULT_TOKEN: ${{secrets.VAULT_TOKEN}}
     strategy:
       fail-fast: false
       matrix:
