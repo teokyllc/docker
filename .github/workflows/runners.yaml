@@ -72,23 +72,23 @@ jobs:
           username: ${{ env.CR_USERNAME }}
           password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
-      - name: Build and Push Versioned Tags
-        uses: docker/build-push-action@v3
-        with:
-          context: ./Actions-Runner
-          file: ./Actions-Runner/${{ matrix.name }}.dockerfile
-          platforms: linux/amd64
-          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-          build-args: |
-            RUNNER_VERSION=${{ env.RUNNER_VERSION }}
-            DOCKER_VERSION=${{ env.DOCKER_VERSION }}
-            DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }}
-            BUILDX_VERSION=${{ env.BUILDX_VERSION }}
-            VAULT_ADDR=${{ env.VAULT_ADDR }}
-            VAULT_TOKEN=${{ env.VAULT_TOKEN }}
-          tags: |
-            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }}
-            ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest
+      # - name: Build and Push Versioned Tags
+      #   uses: docker/build-push-action@v3
+      #   with:
+      #     context: ./Actions-Runner
+      #     file: ./Actions-Runner/${{ matrix.name }}.dockerfile
+      #     platforms: linux/amd64
+      #     push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      #     build-args: |
+      #       RUNNER_VERSION=${{ env.RUNNER_VERSION }}
+      #       DOCKER_VERSION=${{ env.DOCKER_VERSION }}
+      #       DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }}
+      #       BUILDX_VERSION=${{ env.BUILDX_VERSION }}
+      #       VAULT_ADDR=${{ env.VAULT_ADDR }}
+      #       VAULT_TOKEN=${{ env.VAULT_TOKEN }}
+      #     tags: |
+      #       ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }}
+      #       ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest
 
       - name: Release the new image
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -98,3 +98,14 @@ jobs:
             sudo chmod o-r ~/.kube/config && sudo chmod g-r ~/.kube/config
             helm repo add actions-runner-controller \
               https://actions-runner-controller.github.io/actions-runner-controller
+            helm upgrade --install \
+              --insecure-skip-tls-verify \
+              --namespace actions-runner-system \
+              --create-namespace \
+              --set authSecret.enabled=true \
+              --set authSecret.github_token=$(vault kv get -mount=kv -field=pat github) \
+              --set image.actionsRunnerRepositoryAndTag=${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }} \
+              --set image.actionsRunnerImagePullSecrets=[acr-access] \
+              --wait \
+              actions-runner-controller \
+              actions-runner-controller/actions-runner-controller
