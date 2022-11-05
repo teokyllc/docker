@@ -95,7 +95,6 @@ jobs:
         run: |
             mkdir ~/.kube
             vault kv get -mount=kv -field=kubeconfig kubeconfig > ~/.kube/config
-            ls -lah ~/.kube/config
-            sudo chown 600 ~/.kube/config
+            sudo chmod o-r ~/.kube/config && sudo chmod g-r ~/.kube/config
             helm repo add actions-runner-controller \
               https://actions-runner-controller.github.io/actions-runner-controller
