@@ -107,5 +107,5 @@ jobs:
               --set image.actionsRunnerImagePullSecrets={acr-access} \
               --wait \
               actions-runner-controller \
-              actions-runner-controller/actions-runner-controller
+              actions-runner-controller/actions-runner-controller \
               . > generated.yaml
