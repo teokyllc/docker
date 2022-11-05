@@ -109,4 +109,3 @@ jobs:
               actions-runner-controller \
               actions-runner-controller/actions-runner-controller
               . > generated.yaml
-            cat generated.yaml
