@@ -104,7 +104,7 @@ jobs:
               --set authSecret.enabled=true \
               --set authSecret.github_token=$(vault kv get -mount=kv -field=pat github) \
               --set image.actionsRunnerRepositoryAndTag=ataylorregistry.azurecr.io/actions-runner-dind:v2.298.2-ubuntu-20.04-a08f66cc \
-              --set image.actionsRunnerImagePullSecrets=[acr-access] \
+              --set image.actionsRunnerImagePullSecrets={acr-access} \
               --wait \
               actions-runner-controller \
               actions-runner-controller/actions-runner-controller
