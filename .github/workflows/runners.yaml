@@ -108,4 +108,4 @@ jobs:
               --wait \
               actions-runner-controller \
               actions-runner-controller/actions-runner-controller \
-              . > generated.yaml
+              > generated.yaml
