@@ -17,8 +17,10 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt update -y \
     && apt-get install -y software-properties-common \
     && add-apt-repository -y ppa:git-core/ppa \
+    && add-apt-repository -y ppa:ansible/ansible \
     && apt-get update -y \
     && apt-get install -y --no-install-recommends \
+    ansible \
     apt-transport-https \
     build-essential \
     curl \
@@ -52,7 +54,10 @@ RUN apt update -y \
     wget \
     zip \
     zstd
-    
+
+# Ansible modules
+RUN ansible-galaxy collection install community.docker \
+    &&  ansible-galaxy collection install kubernetes.core
 
 # Actions Runner user
 RUN adduser --disabled-password --gecos "" --uid 1000 runner \
