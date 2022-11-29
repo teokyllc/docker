@@ -161,8 +161,7 @@ RUN mkdir /opt/hostedtoolcache \
 
 # Trusted CA
 RUN export VAULT_SKIP_VERIFY=true \
-    && vault kv get -mount=kv -field=AD-CA cert > /usr/local/share/ca-certificates/teokyllc-root-ca.crt \
-    && vault kv get -mount=kv -field=vault-int-ca cert > /usr/local/share/ca-certificates/teokyllc-vault-int-ca.crt \
+    && vault kv get -mount=kv -field=ca-chain cert > /usr/local/share/ca-certificates/teokyllc-ca-chain.crt \
     && update-ca-certificates
 
 COPY entrypoint.sh logger.bash startup.sh update-status /usr/bin/
