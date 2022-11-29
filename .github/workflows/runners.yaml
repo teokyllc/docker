@@ -27,8 +27,8 @@ env:
   DOCKER_VERSION: 20.10.12
   DUMB_INIT_VERSION: 1.2.5
   BUILDX_VERSION: 0.9.1
-  CONTAINER_REGISTRY: ataylorregistry.azurecr.io
-  CR_USERNAME: ataylorregistry
+  CONTAINER_REGISTRY: cr.teokyllc.internal
+  CR_USERNAME: ataylor
   VAULT_ADDR: "https://vault.teokyllc.internal:8200"
   VAULT_TOKEN: ${{secrets.VAULT_TOKEN}}
 
