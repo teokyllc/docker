@@ -87,7 +87,7 @@ RUN curl https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o awscliv2.zi
     && rm -f awscliv2.zip
 
 # Azure CLI
-RUN wget -O- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/az-cli.gpg
+RUN curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/az-cli.gpg > /dev/null
 
 # Docker
 RUN export ARCH=$(echo ${TARGETPLATFORM} | cut -d / -f2) \
