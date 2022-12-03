@@ -51,6 +51,7 @@ apiVersion: actions.summerwind.dev/v1alpha1
 kind: RunnerDeployment
 metadata:
   name: runnerdeploy
+  namespace: actions-runner
 spec:
   replicas: 1
   template:
