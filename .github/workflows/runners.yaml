@@ -67,8 +67,8 @@ jobs:
       - name: Trust TLS cert
         run: |
           export VAULT_SKIP_VERIFY=true 
-          vault kv get -mount=kv -field=ca-chain cert > /usr/local/share/ca-certificates/teokyllc-ca-chain.crt 
-          update-ca-certificates
+          sudo vault kv get -mount=kv -field=ca-chain cert > /usr/local/share/ca-certificates/teokyllc-ca-chain.crt 
+          sudo update-ca-certificates
 
       - name: Login to DockerHub
         if: ${{ github.event_name == 'release' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
