@@ -64,12 +64,6 @@ jobs:
           docker context create tls-env
           docker buildx create tls-env
 
-      - name: Trust TLS cert
-        run: |
-          export VAULT_SKIP_VERIFY=true 
-          sudo vault kv get -mount=kv -field=ca-chain cert > /usr/local/share/ca-certificates/teokyllc-ca-chain.crt 
-          sudo update-ca-certificates
-
       - name: Login to DockerHub
         if: ${{ github.event_name == 'release' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: docker/login-action@v2
@@ -120,6 +114,7 @@ jobs:
             kind: RunnerDeployment
             metadata:
               name: runnerdeploy
+              namespace: actions-runner
             spec:
               replicas: 1
               template:
