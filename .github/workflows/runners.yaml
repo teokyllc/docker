@@ -79,10 +79,10 @@ jobs:
               --build-arg RUNNER_VERSION=${{ env.RUNNER_VERSION }} \
               --build-arg DOCKER_VERSION=${{ env.DOCKER_VERSION }} \
               --build-arg DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }} \
-              --build-arg VAULT_ADDR=${{ env.VAULT_ADDR }}
-              --build-arg VAULT_TOKEN=${{ env.VAULT_TOKEN }}
-              --build-arg TARGETPLATFORM=linux/amd64
-              -f Actions-Runner/actions-runner-dind.dockerfile
+              --build-arg VAULT_ADDR=${{ env.VAULT_ADDR }} \
+              --build-arg VAULT_TOKEN=${{ env.VAULT_TOKEN }} \
+              --build-arg TARGETPLATFORM=linux/amd64 \
+              -f Actions-Runner/actions-runner-dind.dockerfile \
               .
 
       # - name: Build and Push Versioned Tags
