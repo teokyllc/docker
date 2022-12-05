@@ -59,10 +59,10 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
-      - name: Setup buildx context
-        run: |
-          docker context create tls-env
-          docker buildx create tls-env
+      # - name: Setup buildx context
+      #   run: |
+      #     docker context create tls-env
+      #     docker buildx create tls-env
 
       - name: Login to DockerHub
         if: ${{ github.event_name == 'release' || github.event_name == 'push' && github.ref == 'refs/heads/main' }}
