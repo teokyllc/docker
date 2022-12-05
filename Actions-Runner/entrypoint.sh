@@ -1,15 +1,6 @@
 #!/bin/bash
 source logger.bash
 
-# Install buildx plugin
-mkdir /home/runner/.docker
-mkdir /home/runner/.docker/cli-plugins
-wget https://github.com/docker/buildx/releases/download/v${BUILDX_VERSION}/buildx-v${BUILDX_VERSION}.linux-amd64 -P /home/runner/.docker/cli-plugins
-mv /home/runner/.docker/cli-plugins/buildx-v${BUILDX_VERSION}.linux-amd64  /home/runner/.docker/cli-plugins/docker-buildx
-chmod +x /home/runner/.docker/cli-plugins/docker-buildx
-docker buildx install
-
-
 
 RUNNER_ASSETS_DIR=${RUNNER_ASSETS_DIR:-/runnertmp}
 RUNNER_HOME=${RUNNER_HOME:-/runner}
