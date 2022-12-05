@@ -1,4 +1,4 @@
-name: Runners
+name: Github Actions Runner Images
 
 on:
   pull_request:
@@ -10,7 +10,6 @@ on:
       - 'main'
     paths:
       - 'Actions-Runner/**'
-      - '!Actions-Runner/Makefile'
       - '.github/workflows/runners.yaml'
       - '!**.md'
   push:
@@ -18,7 +17,6 @@ on:
       - 'main'
     paths:
       - 'Actions-Runner/**'
-      - '!Actions-Runner/Makefile'
       - '.github/workflows/runners.yaml'
       - '!**.md'
 
@@ -26,26 +24,18 @@ env:
   RUNNER_VERSION: 2.298.2
   DOCKER_VERSION: 20.10.12
   DUMB_INIT_VERSION: 1.2.5
-  BUILDX_VERSION: 0.9.1
   CONTAINER_REGISTRY: cr.teokyllc.internal
   CR_USERNAME: ataylor
+  RUNNER_IMAGE_NAME: actions-runner-dind
+  RUNNER_OS_NAME: ubuntu
+  RUNNER_OS_VERSION: 22.04
   VAULT_ADDR: "https://vault.teokyllc.internal:8200"
   VAULT_TOKEN: ${{secrets.VAULT_TOKEN}}
 
 jobs:
   build-runners:
-    name: Build ${{ matrix.name }}-${{ matrix.os-name }}-${{ matrix.os-version }}
+    name: Build ${{ env.RUNNER_IMAGE_NAME }}-${{ env.RUNNER_OS_NAME }}-${{ env.RUNNER_OS_VERSION }}
     runs-on: [self-hosted]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: actions-runner-dind
-            os-name: ubuntu
-            os-version: 20.04
-          # - name: actions-runner-dind-rootless
-          #   os-name: ubuntu
-          #   os-version: 20.04
 
     steps:
       - name: Checkout
@@ -56,14 +46,6 @@ jobs:
         run: echo ::set-output name=sha_short::${GITHUB_SHA::8}
         shell: bash
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2
-
-      # - name: Setup buildx context
-      #   run: |
-      #     docker context create tls-env
-      #     docker buildx create tls-env
-
       - name: Login to DockerHub
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         uses: docker/login-action@v2
@@ -72,10 +54,9 @@ jobs:
           username: ${{ env.CR_USERNAME }}
           password: ${{ secrets.CONTAINER_REGISTRY_PASSWORD }}
 
-      - name: Build
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      - name: Build versioned Runner image
         run: |
-            docker build -t ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }} \
+            docker build -t ${{ env.CONTAINER_REGISTRY }}/${{ env.RUNNER_IMAGE_NAME }}:v${{ env.RUNNER_VERSION }}-${{ env.RUNNER_OS_NAME }}-${{ RUNNER_OS_VERSION }}-${{ steps.sha.outputs.sha_short }} \
               --build-arg RUNNER_VERSION=${{ env.RUNNER_VERSION }} \
               --build-arg DOCKER_VERSION=${{ env.DOCKER_VERSION }} \
               --build-arg DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }} \
@@ -85,23 +66,35 @@ jobs:
               -f Actions-Runner/actions-runner-dind.dockerfile \
               .
 
-      # - name: Build and Push Versioned Tags
-      #   uses: docker/build-push-action@v3
-      #   with:
-      #     context: ./Actions-Runner
-      #     file: ./Actions-Runner/${{ matrix.name }}.dockerfile
-      #     platforms: linux/amd64
-      #     push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-      #     build-args: |
-      #       RUNNER_VERSION=${{ env.RUNNER_VERSION }}
-      #       DOCKER_VERSION=${{ env.DOCKER_VERSION }}
-      #       DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }}
-      #       BUILDX_VERSION=${{ env.BUILDX_VERSION }}
-      #       VAULT_ADDR=${{ env.VAULT_ADDR }}
-      #       VAULT_TOKEN=${{ env.VAULT_TOKEN }}
-      #     tags: |
-      #       ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }}
-      #       ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest
+      - name: Build latest Runner image
+        run: |
+            docker build -t ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest \
+              --build-arg RUNNER_VERSION=${{ env.RUNNER_VERSION }} \
+              --build-arg DOCKER_VERSION=${{ env.DOCKER_VERSION }} \
+              --build-arg DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }} \
+              --build-arg VAULT_ADDR=${{ env.VAULT_ADDR }} \
+              --build-arg VAULT_TOKEN=${{ env.VAULT_TOKEN }} \
+              --build-arg TARGETPLATFORM=linux/amd64 \
+              -f Actions-Runner/actions-runner-dind.dockerfile \
+              .
+
+      - name: Build latest DinD image
+        run: |
+            docker build -t ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest \
+              --build-arg RUNNER_VERSION=${{ env.RUNNER_VERSION }} \
+              --build-arg DOCKER_VERSION=${{ env.DOCKER_VERSION }} \
+              --build-arg DUMB_INIT_VERSION=${{ env.DUMB_INIT_VERSION }} \
+              --build-arg VAULT_ADDR=${{ env.VAULT_ADDR }} \
+              --build-arg VAULT_TOKEN=${{ env.VAULT_TOKEN }} \
+              --build-arg TARGETPLATFORM=linux/amd64 \
+              -f Actions-Runner/actions-runner-dind.dockerfile \
+              .
+
+      - name: Push Docker images
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+        run: |
+            docker push ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:v${{ env.RUNNER_VERSION }}-${{ matrix.os-name }}-${{ matrix.os-version }}-${{ steps.sha.outputs.sha_short }}
+            docker push ${{ env.CONTAINER_REGISTRY }}/${{ matrix.name }}:latest
 
       - name: Release the new image
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
@@ -122,15 +115,3 @@ jobs:
               --set=image.actionsRunnerImagePullSecrets[0]=cr-access \
               actions-runner-controller \
               actions-runner-controller/actions-runner-controller
-            cat <<EOF | kubectl apply -f -
-            apiVersion: actions.summerwind.dev/v1alpha1
-            kind: RunnerDeployment
-            metadata:
-              name: runnerdeploy
-              namespace: actions-runner
-            spec:
-              replicas: 1
-              template:
-                spec:
-                  organization: teokyllc
-            EOF
