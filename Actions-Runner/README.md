@@ -3,7 +3,7 @@ This folder contains files required to build the Github Actions Runner Docker im
 * actions-runner-dind.dockerfile
 * actions-runner-dind-rootless.dockerfile
 
-<br>
+
 [Actions Runner Controller (ARC)](https://github.com/actions-runner-controller/actions-runner-controller)<br>
 [detailed-docs](https://github.com/actions-runner-controller/actions-runner-controller/blob/master/docs/detailed-docs.md)<br>
 [Helm Values](https://github.com/actions-runner-controller/actions-runner-controller/tree/master/charts/actions-runner-controller)<br>
@@ -16,46 +16,53 @@ helm repo add actions-runner-controller https://actions-runner-controller.github
 ```
 <br>
 
-Download and customize the values.yaml file.  Update the file to include the authentication to Github and the custom Runner image.<br>
+Create a secret for Github auth.<br>
 ```
-wget https://github.com/actions-runner-controller/actions-runner-controller/blob/master/charts/actions-runner-controller/values.yaml
-
-authSecret:
-  enabled: true
-  create: true
-  name: "controller-manager"
-  annotations: {}
-  github_token: "ghp_123456789"
-
-dockerRegistryMirror: ""
-image:
-  repository: "summerwind/actions-runner-controller"
-  actionsRunnerRepositoryAndTag: "ataylorregistry.azurecr.io/actions-runner-dind:v2.298.2-ubuntu-20.04-532db11e"
-  dindSidecarRepositoryAndTag: "docker:dind"
-  pullPolicy: IfNotPresent
-  actionsRunnerImagePullSecrets: [acr-access]
+kubectl create secret generic controller-manager \
+    -n actions-runner-system \
+    --from-literal=github_token=ghp_fhv17VA4q
 ```
 <br>
 
 
 Deploy the Helm chart.<br>
 ```
-helm upgrade --install --namespace actions-runner-system --create-namespace --values ~/values.yml --wait actions-runner-controller actions-runner-controller/actions-runner-controller
+# Update Helm repos
+helm repo update
+
+# View configured values for a chart
+helm --namespace actions-runner-system get values actions-runner-controller
+
+# Upgrade adding an additional value
+helm upgrade --install --namespace actions-runner-system \
+    --create-namespace \
+    --reuse-values \
+    --set metrics.serviceMonitor.enabled=false \
+    actions-runner-controller actions-runner-controller/actions-runner-controller
+
+
+# https://github.com/actions/actions-runner-controller/releases
+helm upgrade --install --namespace actions-runner-system \
+    --create-namespace \
+    --version 0.23.7 \
+    actions-runner-controller actions-runner-controller/actions-runner-controller
+
 ```
 <br>
 
 Create the Runner Deployment.<br>
 ```
-cat <<EOF | kubectl apply -f -
+kubectl apply -f - <<EOF
 apiVersion: actions.summerwind.dev/v1alpha1
 kind: RunnerDeployment
 metadata:
   name: runnerdeploy
-  namespace: actions-runner
+  namespace: actions-runner-system
 spec:
-  replicas: 1
+  replicas: 5
   template:
     spec:
+      image: "1234567890.dkr.ecr.us-east-2.amazonaws.com/github-actions-runner:lastest"
       organization: teokyllc
 EOF
 ```
